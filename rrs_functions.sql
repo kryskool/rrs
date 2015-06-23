@@ -1,7 +1,7 @@
 -- Copyright (c) 2004, Jim C. Nasby (decibel@rrs.decibel.org)
 -- All rights reserved.
 --
--- $Id: rrs_functions.sql 6 2004-12-03 05:41:35Z decibel $
+-- $Id: rrs_functions.sql 13 2005-01-17 23:32:26Z decibel $
 
 SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
@@ -25,8 +25,20 @@ DECLARE
     v_rrs rrs.rrs%ROWTYPE;
     v_source rrs.source%ROWTYPE;
     v_sql text;
+
+    v_my_oid oid;
 BEGIN
-    -- First, make sure all the buckets are up to date
+    -- Figure out our OID and try to aquire a lock
+    SELECT ''update()''::regprocedure::oid
+            INTO v_my_oid
+    ;
+    
+    IF update_lock(v_my_oid, 1) = 0 THEN
+        RAISE NOTICE ''rrs.update: unable to aquire lock'';
+        RETURN -1;
+    END IF;
+
+    -- make sure all the buckets are up to date
     v_total_rows := rrs.update_buckets();
 
     -- Run through each source, updating each RRD for each source
@@ -134,6 +146,7 @@ BEGIN
     END LOOP;
 
     --debug.f(''alert_rrs exit'');
+    update_lock(v_my_oid, 0);
     RETURN v_total_rows;
 END;
 '

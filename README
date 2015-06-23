@@ -1,0 +1,86 @@
+$Id: README 13 2005-01-17 23:32:26Z decibel $
+
+Here's some real quick-and-dirty explanation of how RRS works and what
+you need to do to set it up.
+
+There are two tables that define how RRS will operate. The rrs table defines
+characteristics of each RRS. In the default configuration, these
+RRSs show data from the past hour, 4 hours, 12 hours, day, week, month, and
+year.
+
+The other configuration table is source. This table describes the different
+data sources RRS will aggregate. There is an example definition that is
+commented out in rrs.sql.
+
+When rrs.update() is run, it first gets a list of all the sources. For each
+source it then gets a list of rrs RRSs, in rrs_id order. This is the order it
+will process the RRSs in, and it's important that a parent is processed before
+it's children. An RRS with a NULL parent will pull data from base data table
+that you're aggregating out of. An RRS with a parent specified will pull data
+from that RRS.
+
+Here's details on what each field in the source table means:
+
+source_id is an integer used to reference each source. It's a serial, and
+shouldn't be touched.
+
+source_name is a unique name for each source. It is how you should reference
+the source table should you need to.
+
+insert_table is the table that aggregated data will be inserted into.
+
+source_table is the table that raw data will be pulled from.
+
+source_timestamptz_field is the field in the source table that will be used for
+the time aggregation. It must be of type timestamptz.
+
+group_clause is the clause that will be used to group data when aggregating.
+
+insert_aggregate_fields is the list of fields in *insert_table* that will be
+inserted into
+
+primary_aggregate is the SELECT clause that will be used when inserting data
+from *source_table*.
+
+rrs_aggregate is the SELECT clause that will be used when inserting data from
+*insert_table*.
+
+Finally, here's a detailed description of how update() works:
+
+First, update rrs.bucket. Delete any old buckets, and add new buckets as required.
+
+For each source...
+
+For each RRS (ORDER BY rrs_id)...
+
+If source.parent is NULL, then
+INSERT INTO *insert_table* (bucket_id, *group_clause*, *insert_aggregate_fields*)
+    SELECT bucket_id, *group_clause*, *primary_aggregate*
+        FROM *source_table*, rrs.bucket
+        GROUP BY rrs.bucket_id, *group_clause*
+
+Otherwise,
+INSERT INTO *insert_table* (bucket_id, *group_clause*, *insert_aggregate_fields*)
+    SELECT bucket_id, *group_clause*, *rrs_aggregate*
+        FROM *insert_table*, rrs.bucket
+        GROUP BY rrs.bucket_id, *group_clause*
+
+I've ommitted the details of how data is grouped into time buckets from the
+SELECT statements, but that is part of the code that isn't configurable. 
+
+
+TROUBLESHOOTING
+---------------
+
+If it's taking a long time to run update(), you've probably run into a
+configuration problem of some sort. These steps will help identify the issue:
+
+SET client_min_messages = debug;
+SELECT update_buckets(); -- This adds all the buckets. It typically runs OK
+SELECT update();
+
+By changing client_min_messages, you'll now have the actual queries that RRS is
+running against the system. You should take the last one displayed (the one
+that's taking a long time), and do an EXPLAIN on it. This should point you to
+the problem. Note that it's critical that your raw data table has an index on
+the timestamp column that you're joining on.

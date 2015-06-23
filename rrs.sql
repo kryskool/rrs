@@ -1,7 +1,7 @@
 -- Copyright (c) 2004, Jim C. Nasby (decibel@rrs.decibel.org)
 -- All rights reserved.
 --
--- $Id: rrs.sql 6 2004-12-03 05:41:35Z decibel $
+-- $Id: rrs.sql 13 2005-01-17 23:32:26Z decibel $
 
 SET client_encoding = 'SQL_ASCII';
 
@@ -64,8 +64,8 @@ COPY rrs (rrs_id, keep_buckets, parent, parent_buckets, time_per_bucket, rrs_nam
 
 
 /*
-COPY source (source_id, source_name, insert_table, source_table, source_timestamptz_field, group_clause, insert_aggregate_fields, primary_aggregate, rrs_aggregate) FROM stdin;
-1	page_log	page_log.rrs	page_log.log	log_time	page_id,project_id,other	hits,min_hits,max_hits,total_duration,min_duration,max_duration	count(*),count(*),count(*),sum(duration),min(duration),max(duration)	sum(hits),min(min_hits),max(max_hits),sum(total_duration),min(min_duration),max(max_duration)
+COPY source (source_name, insert_table, source_table, source_timestamptz_field, group_clause, insert_aggregate_fields, primary_aggregate, rrs_aggregate) FROM stdin;
+page_log.rrs	page_log.log	log_time	page_id,project_id,other	hits,min_hits,max_hits,total_duration,min_duration,max_duration	count(*),count(*),count(*),sum(duration),min(duration),max(duration)	sum(hits),min(min_hits),max(max_hits),sum(total_duration),min(min_duration),max(max_duration)
 \.
 */
 
