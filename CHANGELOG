@@ -1,0 +1,17 @@
+0.3
+---
+Change update() to SECURITY DEFINER and remove grants on things that no longer
+needed them.
+
+Add schema references to several places.
+
+Fix bug in max_end_time_to_delete. Previously, it would not consider the
+requirements children had of their parents.
+
+Second call to update_locks() in update() was completely broken.
+
+Add crude update mechanism.
+
+$Id$
+
+vi: noexpandtab ts=4 sw=4

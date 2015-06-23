@@ -1,7 +1,7 @@
 -- Copyright (c) 2004, Jim C. Nasby (decibel@rrs.decibel.org)
 -- All rights reserved.
 --
--- $Id: util_functions.sql 13 2005-01-17 23:32:26Z decibel $
+-- $Id: util_functions.sql 27 2005-01-22 19:11:38Z decibel $
 
 CREATE OR REPLACE FUNCTION rrs.update_lock(oid, int) RETURNS int AS '
 DECLARE

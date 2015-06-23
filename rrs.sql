@@ -1,7 +1,7 @@
 -- Copyright (c) 2004, Jim C. Nasby (decibel@rrs.decibel.org)
 -- All rights reserved.
 --
--- $Id: rrs.sql 13 2005-01-17 23:32:26Z decibel $
+-- $Id: rrs.sql 27 2005-01-22 19:11:38Z decibel $
 
 SET client_encoding = 'SQL_ASCII';
 
@@ -73,8 +73,8 @@ page_log.rrs	page_log.log	log_time	page_id,project_id,other	hits,min_hits,max_hi
 GRANT SELECT ON rrs TO PUBLIC;
 GRANT SELECT ON source TO PUBLIC;
 GRANT SELECT,UPDATE ON source_source_id_seq TO PUBLIC;
-GRANT ALL ON bucket TO PUBLIC;
-GRANT ALL ON source_status TO PUBLIC;
+GRANT SELECT ON bucket TO PUBLIC;
+GRANT SELECT ON source_status TO PUBLIC;
 GRANT SELECT,UPDATE ON bucket_bucket_id_seq TO PUBLIC;
 
 -- vi: expandtab sw=4 ts=4

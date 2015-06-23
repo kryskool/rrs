@@ -1,7 +1,7 @@
 -- Copyright (c) 2004, Jim C. Nasby (decibel@rrs.decibel.org)
 -- All rights reserved.
 --
--- $Id: rrs_functions.sql 13 2005-01-17 23:32:26Z decibel $
+-- $Id: rrs_functions.sql 27 2005-01-22 19:11:38Z decibel $
 
 SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
@@ -29,11 +29,11 @@ DECLARE
     v_my_oid oid;
 BEGIN
     -- Figure out our OID and try to aquire a lock
-    SELECT ''update()''::regprocedure::oid
+    SELECT ''rrs.update()''::regprocedure::oid
             INTO v_my_oid
     ;
     
-    IF update_lock(v_my_oid, 1) = 0 THEN
+    IF rrs.update_lock(v_my_oid, 1) = 0 THEN
         RAISE NOTICE ''rrs.update: unable to aquire lock'';
         RETURN -1;
     END IF;
@@ -146,11 +146,13 @@ BEGIN
     END LOOP;
 
     --debug.f(''alert_rrs exit'');
-    update_lock(v_my_oid, 0);
+    PERFORM rrs.update_lock(v_my_oid, 0);
     RETURN v_total_rows;
 END;
 '
-    LANGUAGE plpgsql;
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+;
 
 --
 -- TOC entry 17 (OID 591228975)
@@ -172,10 +174,11 @@ BEGIN
     -- we do an outer join.
     -- We also need to take our parent RRDs into account.
     SELECT INTO v_min_end_time
-            min(last_end_time)
-        FROM rrs.source_status ss
-            JOIN rrs.rrs r ON (ss.rrs_id = r.rrs_id)
-            RIGHT JOIN rrs.source s ON (ss.source_id = s.source_id)
+            -- coalesce before min otherwise NULLs are ignored
+            min(coalesce(last_end_time, ''1970-01-01 00:00:00-00''))
+        FROM rrs.source s
+            JOIN rrs.rrs r ON (1=1)
+            LEFT JOIN rrs.source_status ss ON (ss.source_id = s.source_id AND ss.rrs_id = r.rrs_id)
         WHERE r.rrs_id = p_rrs_id
             OR r.parent = p_rrs_id
     ;
@@ -190,19 +193,16 @@ BEGIN
 
     -- Check on keep_buckets
     -- Find the last bucket created, and subtract keep buckets from it
-    -- No reason to run this if v_min_end_time is already null
-    IF v_min_end_time IS NOT NULL THEN
-        SELECT INTO v_min_end_time
-                min(    (SELECT max(end_time)
-                                        FROM rrs.bucket
-                                        WHERE rrs_id = p_rrs_id
-                                    ) - time_per_bucket * keep_buckets
-                                , v_min_end_time
-                            )
-            FROM rrs.rrs
-            WHERE rrs_id = p_rrs_id
-        ;
-    END IF;
+    SELECT INTO v_min_end_time
+            min(    (SELECT max(end_time)
+                                    FROM rrs.bucket
+                                    WHERE rrs_id = p_rrs_id
+                                ) - time_per_bucket * keep_buckets
+                            , v_min_end_time
+                        )
+        FROM rrs.rrs
+        WHERE rrs_id = p_rrs_id
+    ;
     
     /*
     SELECT debug.f(''update_rrs_buckets v_min_end_time for rrs_id %s keep_buckets = %s''
@@ -237,6 +237,7 @@ DECLARE
     v_buckets_added int := 0;
 BEGIN
     --debug.f(''update_buckets enter'');
+
     -- Run through each RRD
     FOR v_rrs IN SELECT * FROM rrs.rrs ORDER BY coalesce( parent, -1 ), rrs_id
     LOOP
@@ -365,7 +366,6 @@ END;
 '
     LANGUAGE plpgsql;
 
-
 --
 -- TOC entry 19 (OID 591228977)
 -- Name: interval_time(timestamp with time zone, interval); Type: FUNCTION; Schema: rrs; Owner: pgsql
@@ -438,9 +438,5 @@ END;
     LANGUAGE plpgsql;
 
 GRANT EXECUTE ON FUNCTION update() TO public;
-GRANT EXECUTE ON FUNCTION update_buckets() TO public;
-GRANT EXECUTE ON FUNCTION add_buckets(int, interval, timestamptz, timestamptz) TO public;
-GRANT EXECUTE ON FUNCTION interval_time(timestamptz, interval) TO public;
-GRANT EXECUTE ON FUNCTION max_end_time_to_delete(int) TO public;
 
 -- vi: expandtab sw=4 ts=4

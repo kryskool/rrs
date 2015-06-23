@@ -1,3 +1,9 @@
-$Id: TODO 13 2005-01-17 23:32:26Z decibel $
+$Id: TODO 27 2005-01-22 19:11:38Z decibel $
+
+Add some kind of graphical web front-end.
+
+An initial run can take a huge amount of time if there's existing data to
+process. It would be good if there was a way to speed this up. It also results
+in a lot of dead tuples.
 
 Add field comments as part of our documentation.
